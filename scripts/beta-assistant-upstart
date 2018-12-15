@@ -1,0 +1,6 @@
+#!/bin/sh
+ps aux | grep beta.py | grep -v grep
+if [ $? != 0 ]
+then
+    /usr/bin/python /home/pi/snowboy/examples/Python/beta.py /home/pi/voice-assistant-client/hotwords/Bijou.pmdl >> /tmp/assistant.log 2>&1 &
+fi
