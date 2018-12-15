@@ -5,7 +5,7 @@ sudo apt-get install swig3.0 python-dev python-pip sox git swig --yes
 sudo apt-get install gcc build-essential pulseaudio pulseaudio-utils --yes
 sudo apt-get install portaudio19-dev libffi-dev libssl-dev libatlas-base-dev  --yes
 sudo apt-get install --reinstall alsa-base alsa-utils --yes
-sudo pip install pyaudio 
+sudo pip install pyaudio toml
 sudo pip install kodi-json
 sudo pip install requests
 sudo pip install websocket-client

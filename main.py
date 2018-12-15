@@ -4,7 +4,6 @@ import time
 import os
 import subprocess
 from websocket import create_connection
-#from kodijson import Kodi, PLAYER_VIDEO
 import snowboydecoder
 import sys
 import signal
@@ -18,11 +17,12 @@ CHANNELS = 1
 RATE = 16000
 THRESHOLD = 2500
 SENSITIVITY = 0.45
-WS = create_connection("ws://192.168.0.107:9001")
-#KODI = Kodi("http://192.168.0.107:8080/jsonrpc", "", "")
+WS_WHISPER = create_connection("ws://192.168.0.107:9001")
 ASLEEP = False
 
-# PARSE TOML INTER
+##
+## If config file exists, parse it in and set it's values.
+##
 if os.path.isfile("./config.toml"):
     print("Loading in config file..")
     f = open("./config.toml", "r")
@@ -31,7 +31,9 @@ if os.path.isfile("./config.toml"):
     #print(toml.dumps(config))
     f.close()
 
-
+##
+## Sends captured listengin audio to Whisper server for transcription.
+##
 def transcribe():
     p = pyaudio.PyAudio()
     stream = p.open(format=FORMAT,
@@ -41,40 +43,47 @@ def transcribe():
                     frames_per_buffer=CHUNK)
 
     print("INFO: Starting Transcrition..")
-    WS.send("start")
+    WS_WHISPER.send("start")
     subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/ding.wav"])
     # Just added 5 seconds as test
     t_end = time.time() + 4
     while time.time() < t_end:
-        WS.send_binary(stream.read(CHUNK))
-    WS.send("stop")
-    command_handler(WS.recv())
+        WS_WHISPER.send_binary(stream.read(CHUNK))
+    WS_WHISPER.send("stop")
+    command_handler(WS_WHISPER.recv())
     stream.close()
     p.terminate()
 
 
+##
+## Takes in a string of transcriptions from whisper, attempts to parse and act upon them.
+##
 def command_handler(commands):
     global ASLEEP
-    #global KODI
     c = commands.split(':')
     print("DEBUG:" + commands)
+
     # Checking for way out there junk and false positives using a threshold out of 10k.
-    if int(c[-1]) < -7500:
+    if int(c[-1]) < -7000:
         print("INFO: I am not confident what you are talking about.")
         subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/sound2.wav"])
+
     else:
         print("INFO: I am confident I understood your commands.")
 
+        # Disable and enable commands basically.
         if "AWAKE" in commands:
             ASLEEP = False
         elif "SLEEP" in commands or ASLEEP:
             ASLEEP = True
+
         #Buzz Off command puts Bijou to sleep for fifteen minutes.
         elif "BUZZ" in commands and "OFF" in commands:
             print("INFO: Going to sleep for fifteen minutes!")
             subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/sound6.wav"])
             time.sleep(890)
             print("INFO: Yawn~ Back to work.")
+
         #These following commands make use of mimic to vocalize statements.
         elif "DATE" in commands:
             time.ctime()
@@ -84,6 +93,7 @@ def command_handler(commands):
             say('"It is ' + time.strftime('%l:%M%p') + '"' )
         elif "INTRODUCTION" in commands:
             intro()
+
         # These statements make calls to smart lights, currently manual.
         elif "LIGHT" in commands:
             for value in c:
@@ -103,12 +113,16 @@ def command_handler(commands):
                     os.system("curl http://192.168.0.107:8088/index.html?param=light3toggle > /dev/null 2>&1")
                 elif value == "EIGHT":
                     os.system("curl http://192.168.0.107:8088/index.html?param=light4toggle > /dev/null 2>&1")
-    #elif "PAUSE" in commands or "PLAY" in commands:
-        #print("Toggling Pause")
-        #KODI.Player.PlayPause([PLAYER_VIDEO])
-    #elif "RESTART" in commands:
-        #os.system("sudo shutdown -r now")
+
+        elif "GOOD" in commands and "NIGHT" in commands:
+            for n in range(1, 4):
+                os.system("curl http://192.168.0.110:8080/index.html?param=light" + str(n) + "off >/dev/null 2>&1")
+            for n in range(1, 4):
+                os.system("curl http://192.168.0.107:8088/index.html?param=light" + str(n) + "off >/dev/null 2>&1")
+
+        # Action completed sound.
         subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/level_up.wav"])
+
 
 #
 # Say makes use of Mimic which will need to be installed on your system for this to work
@@ -116,10 +130,6 @@ def command_handler(commands):
 #
 def say(text):
     print("INFO:SAID:" + text)
-    base_params = ["mimic", "-t", text]
-    voice = ["-voice", "/home/pi/mimic/voices/cmu_us_clb.flitevox"]
-    more_params = ["--setf", "f0_shift=1.8", "--setf", "int_f0_target_sddev=25", "--setf", "duration_stretch=0.9"]
-    subprocess.call(base_params + voice + more_params)
 
 def intro():
     text = "Hello, my name is bee-jew, I am a voice assistant in charge of this, station."
@@ -138,8 +148,6 @@ if len(sys.argv) == 1:
     print("USAGE: python demo.py your.model")
     sys.exit(-1)
 
-#print(KODI.JSONRPC.Ping())
-
 model = sys.argv[1]
 
 # capture SIGINT signal, e.g., Ctrl+C
@@ -152,5 +160,5 @@ detector.start(detected_callback=transcribe,
                interrupt_check=interrupt_callback,
                sleep_time=0.03)
 
-WS.close()
+WS_WHISPER.close()
 detector.terminate()
