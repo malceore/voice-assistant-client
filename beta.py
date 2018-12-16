@@ -1,5 +1,4 @@
 import pyaudio
-#import wave
 import time
 import os
 import subprocess
@@ -8,6 +7,9 @@ import snowboydecoder
 import sys
 import signal
 import toml
+import math
+import audioop
+from collections import deque
 
 # GLOBAL VARIABLE DEFAULTS
 INTER = False
@@ -16,6 +18,7 @@ FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 16000
 THRESHOLD = 2500
+SILENCE_LIMIT = 1
 SENSITIVITY = 0.45
 WS_WHISPER = create_connection("ws://192.168.0.107:9001")
 ASLEEP = False
@@ -45,11 +48,23 @@ def transcribe():
     print("INFO: Starting Transcrition..")
     WS_WHISPER.send("start")
     subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/ding.wav"])
-    # Just added 5 seconds as test
+
+    # Listen for four seconds or until threshold is no longer breached
     t_end = time.time() + 4
-    while time.time() < t_end:
-        WS_WHISPER.send_binary(stream.read(CHUNK))
+    slid_win = deque(maxlen=SILENCE_LIMIT * (RATE/CHUNK))
+    read = stream.read(CHUNK)
+    slid_win.append(math.sqrt(abs(audioop.avg(read, 4))))
+    while time.time() < t_end or sum([x > THRESHOLD for x in slid_win]) > 0:
+        #if time.time() < t_end:
+            #print("Relying on threshold here")
+        read = stream.read(CHUNK)
+        slid_win.append(math.sqrt(abs(audioop.avg(read, 4))))
+        WS_WHISPER.send_binary(read)
+    # Sending one extra packet as a bit of sillence on the end greatly improves accuracy.
+    read = stream.read(CHUNK)
+    WS_WHISPER.send_binary(read)
     WS_WHISPER.send("stop")
+    # Waiting to Recieve the text responce from Whisper.
     command_handler(WS_WHISPER.recv())
     stream.close()
     p.terminate()
@@ -64,7 +79,7 @@ def command_handler(commands):
     print("DEBUG:" + commands)
 
     # Checking for way out there junk and false positives using a threshold out of 10k.
-    if int(c[-1]) < -7000:
+    if int(c[-1]) < -9000:
         print("INFO: I am not confident what you are talking about.")
         subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/sound2.wav"])
 
