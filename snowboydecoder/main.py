@@ -4,10 +4,10 @@ import time
 import os
 import subprocess
 from websocket import create_connection
-from snowboydecoder.snowboydecoder import HotwordDetector
+import snowboydecoder
 import sys
 import signal
-import requests
+import toml
 
 # GLOBAL VARIABLE DEFAULTS
 INTER = False
@@ -17,10 +17,19 @@ CHANNELS = 1
 RATE = 16000
 THRESHOLD = 2500
 SENSITIVITY = 0.45
-WS_WHISPER = create_connection("ws://195.168.1.100:9001")
+WS_WHISPER = create_connection("ws://192.168.0.107:9001")
 ASLEEP = False
-JWT = "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IjUzNmY2NmJhLTJlN2MtNDE1NC1iNWNkLTljZGM4YWRkNDIwMyJ9.eyJyb2xlIjoidXNlcl90b2tlbiIsImlhdCI6MTU2MTIzMDM0MiwiaXNzIjoiTm90IHNldC4ifQ.7-Jvr2_qusdlTGAqAgYtb72d1fRuz1oRQmT2zC9Pv0VcRF7e_Lvp8ysk_pxfPBJCeVeO04AQmDH3q9qTEZhbkA"
-URL_WEBTHINGS = "http://195.168.1.100:8080"
+
+##
+## If config file exists, parse it in and set it's values.
+##
+if os.path.isfile("./config.toml"):
+    print("Loading in config file..")
+    f = open("./config.toml", "r")
+    inter = f.read()
+    config = toml.loads(inter)
+    #print(toml.dumps(config))
+    f.close()
 
 ##
 ## Sends captured listengin audio to Whisper server for transcription.
@@ -35,7 +44,7 @@ def transcribe():
 
     print("INFO: Starting Transcrition..")
     WS_WHISPER.send("start")
-    subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
+    subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/ding.wav"])
     # Just added 5 seconds as test
     t_end = time.time() + 4
     while time.time() < t_end:
@@ -45,13 +54,6 @@ def transcribe():
     stream.close()
     p.terminate()
 
-def toggle_webthing(thing, prop):
-    url = URL_WEBTHINGS + "/things/" + thing + "/properties/" + prop
-    payload = {prop: 'false'}
-    headers = {'content-type':'application/json', 'Authorization':'Bearer'+JWT, 'Accept': 'application/json'}
-    response = requests.put(url, data=payload, headers=headers)
-    print( "DEBUG" + url)
-    print(response.status_code)
 
 ##
 ## Takes in a string of transcriptions from whisper, attempts to parse and act upon them.
@@ -64,7 +66,8 @@ def command_handler(commands):
     # Checking for way out there junk and false positives using a threshold out of 10k.
     if int(c[-1]) < -7000:
         print("INFO: I am not confident what you are talking about.")
-        subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
+        subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/sound2.wav"])
+
     else:
         print("INFO: I am confident I understood your commands.")
 
@@ -77,7 +80,7 @@ def command_handler(commands):
         #Buzz Off command puts Bijou to sleep for fifteen minutes.
         elif "BUZZ" in commands and "OFF" in commands:
             print("INFO: Going to sleep for fifteen minutes!")
-            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound6.wav"])
+            subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/sound6.wav"])
             time.sleep(890)
             print("INFO: Yawn~ Back to work.")
 
@@ -95,30 +98,21 @@ def command_handler(commands):
         elif "LIGHT" in commands:
             for value in c:
                 if value == "ONE" or value == "ONE(2)":
-                    #os.system("curl http://192.168.0.110:8080/index.html?param=light1toggle > /dev/null 2>&1")
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led1 on")
-                    #toggle_webthing("http---w25.local-things-led1", "on")
+                    os.system("curl http://192.168.0.110:8080/index.html?param=light1toggle > /dev/null 2>&1")
                 elif value == "TWO" or value == "TO":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led2 on")
-                    #os.system("curl http://192.168.0.110:8080/index.html?param=light2toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.110:8080/index.html?param=light2toggle > /dev/null 2>&1")
                 elif value == "THREE":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led3 on")
-                    #os.system("curl http://192.168.0.110:8080/index.html?param=light3toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.110:8080/index.html?param=light3toggle > /dev/null 2>&1")
                 elif value == "FOUR":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led4 on")
-                    #os.system("curl http://192.168.0.110:8080/index.html?param=light4toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.110:8080/index.html?param=light4toggle > /dev/null 2>&1")
                 elif value == "FIVE":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led5 on")
-                    #os.system("curl http://192.168.0.107:8088/index.html?param=light1toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.107:8088/index.html?param=light1toggle > /dev/null 2>&1")
                 elif value == "SIX":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led6 on")
-                    #os.system("curl http://192.168.0.107:8088/index.html?param=light2toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.107:8088/index.html?param=light2toggle > /dev/null 2>&1")
                 elif value == "SEVEN":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led7 on")
-                    #os.system("curl http://192.168.0.107:8088/index.html?param=light3toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.107:8088/index.html?param=light3toggle > /dev/null 2>&1")
                 elif value == "EIGHT":
-                    os.system("/home/pi/./toggle-property.sh http---w25.local-things-led8 on")
-                    #os.system("curl http://192.168.0.107:8088/index.html?param=light4toggle > /dev/null 2>&1")
+                    os.system("curl http://192.168.0.107:8088/index.html?param=light4toggle > /dev/null 2>&1")
 
         elif "GOOD" in commands and "NIGHT" in commands:
             for n in range(1, 4):
@@ -127,7 +121,7 @@ def command_handler(commands):
                 os.system("curl http://192.168.0.107:8088/index.html?param=light" + str(n) + "off >/dev/null 2>&1")
 
         # Action completed sound.
-        subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
+        subprocess.call(["aplay", "-q", "/home/pi/snowboy/resources/level_up.wav"])
 
 
 #
@@ -159,8 +153,7 @@ model = sys.argv[1]
 # capture SIGINT signal, e.g., Ctrl+C
 signal.signal(signal.SIGINT, signal_handler)
 
-#detector = snowboydecoder.HotwordDetector(model, sensitivity=SENSITIVITY)
-detector = HotwordDetector(model, sensitivity=SENSITIVITY)
+detector = snowboydecoder.HotwordDetector(model, sensitivity=SENSITIVITY)
 print('INFO: Listening... Press Ctrl+C to exit')
 
 detector.start(detected_callback=transcribe,
