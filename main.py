@@ -19,7 +19,8 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'on',
-                 Value(True, self.test()),
+                 #@https://discourse.mozilla.org/t/how-to-trigger-an-event-when-a-property-value-is-changed/34800/4
+                 Value(True, self.setMute),
                  metadata={
                      '@type': 'OnOffProperty',
                      'title': 'Listening',
@@ -29,7 +30,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'volume',
-                 Value(50),
+                 Value(50, self.setVolume()),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Volume',
@@ -42,7 +43,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'sensitivity',
-                 Value(50),
+                 Value(50, self.setSensitivity()),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Sensitivity',
@@ -53,14 +54,26 @@ class VoiceAssistant(Thing):
                      'unit': 'percent',
                  }))
 
-    def test(self):
+    def setMute(self, value):
+        logging.info(value)
+        # Sleep functionality is inverted from listening, need to fix.
+        if value == self.listener.asleep:
+            self.listener.asleep = value
+
+    def setVolume(self):
         print("Mute has been changed!")
+
+    def setSensitivity(self):
+        print("Mute has been changed!")
+
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         print("ERROR: need to specify model name")
         print("USAGE: python demo.py your.model")
         sys.exit(-1)
+
     logging.basicConfig(
         level=10,
         format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s %(message)s"
@@ -69,16 +82,19 @@ if __name__ == '__main__':
     listener = Listener(sys.argv[1])
     thing = VoiceAssistant(listener)
     server = WebThingServer(SingleThing(thing), port=9999)
-    #t = threading.Thread(target=listener.start())
+    #t = threading.Thread(target=listener.start)
+    t = threading.Thread(target=server.start)
 
     try:
         logging.info('starting the server')
-        server.start()
+        t.start()
+        #server.start()
+        listener.start()
     except KeyboardInterrupt:
         logging.info('stopping the server')
-        thing.listener.stop()
-        #t.join()
+        listener.stop()
         server.stop()
+        #t.join()
         logging.info('done')
 
 
