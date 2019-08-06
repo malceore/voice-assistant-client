@@ -43,7 +43,8 @@ class Listener():
 
         print("Starting Transcrition..")
         self.ws_whisper.send("start")
-        subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
+        if not self.asleep:
+            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
         t_end = time.time() + 4
         while time.time() < t_end:
             self.ws_whisper.send_binary(stream.read(self.chunk))
@@ -71,6 +72,9 @@ class Listener():
                 self.asleep = False
             elif "SLEEP" in commands or self.asleep:
                 self.asleep = True
+            elif self.asleep:
+                print("INFO: I head you but I am asleep")
+                pass
 
             #Buzz Off command puts Bijou to sleep for fifteen minutes.
             elif "BUZZ" in commands and "OFF" in commands:
@@ -91,16 +95,17 @@ class Listener():
                     elif value == "FOUR":
                         os.system("/home/pi/./toggle-property.sh http---w25.local-things-led4 on")
                     elif value == "FIVE":
-                        os.system("/home/pi/./toggle-property.sh http---w25.local-things-led5 on")
+                        os.system("/home/pi/./toggle-property.sh http---w26.local-things-led5 on")
                     elif value == "SIX":
-                        os.system("/home/pi/./toggle-property.sh http---w25.local-things-led6 on")
+                        os.system("/home/pi/./toggle-property.sh http---w26.local-things-led6 on")
                     elif value == "SEVEN":
-                        os.system("/home/pi/./toggle-property.sh http---w25.local-things-led7 on")
+                        os.system("/home/pi/./toggle-property.sh http---w26.local-things-led7 on")
                     elif value == "EIGHT":
-                        os.system("/home/pi/./toggle-property.sh http---w25.local-things-led8 on")
+                        os.system("/home/pi/./toggle-property.sh http---w26.local-things-led8 on")
 
             # Action completed sound.
-            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
+            if not self.asleep:
+                subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
 
 
 ##

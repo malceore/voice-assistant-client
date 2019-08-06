@@ -86,13 +86,14 @@ if __name__ == '__main__':
     t = threading.Thread(target=server.start)
 
     try:
-        logging.info('starting the server')
+        logging.info('starting the servers')
         t.start()
+        thing.listener.start()
         #server.start()
-        listener.start()
+        #listener.start()
     except KeyboardInterrupt:
-        logging.info('stopping the server')
-        listener.stop()
+        logging.info('stopping the servers')
+        thing.listener.stop()
         server.stop()
         #t.join()
         logging.info('done')
