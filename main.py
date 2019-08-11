@@ -30,7 +30,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'volume',
-                 Value(50, self.setVolume()),
+                 Value(50),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Volume',
@@ -43,7 +43,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'sensitivity',
-                 Value(50, self.setSensitivity()),
+                 Value(50),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Sensitivity',
@@ -55,16 +55,16 @@ class VoiceAssistant(Thing):
                  }))
 
     def setMute(self, value):
-        logging.info(value)
+        print(value)
         # Sleep functionality is inverted from listening, need to fix.
         if value == self.listener.asleep:
             self.listener.asleep = value
 
-    def setVolume(self):
-        print("Mute has been changed!")
+    #def setVolume(self):
+    #    print("Mute has been changed!")
 
-    def setSensitivity(self):
-        print("Mute has been changed!")
+    #def setSensitivity(self):
+    #    print("Mute has been changed!")
 
 
 
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         logging.info('stopping the servers')
         thing.listener.stop()
         server.stop()
-        #t.join()
+        t.join()
         logging.info('done')
 
 
