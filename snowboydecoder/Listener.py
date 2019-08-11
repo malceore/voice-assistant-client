@@ -27,7 +27,7 @@ class Listener():
 
     def stop(self):
         self.detector.terminate()
-        self.ws_whisper.close()
+        #self.ws_whisper.close()
         print("Listener stopping, terminated..")
 
     ##
@@ -41,7 +41,7 @@ class Listener():
                     input=True,
                     frames_per_buffer=self.chunk)
 
-        print("Starting Transcrition..")
+        print("Starting Transcription..")
         self.ws_whisper.send("start")
         if not self.asleep:
             subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
@@ -50,7 +50,7 @@ class Listener():
             self.ws_whisper.send_binary(stream.read(self.chunk))
         self.ws_whisper.send("stop")
         self.command_handler(self.ws_whisper.recv())
-        stream.close()
+        #stream.close()
         p.terminate()
 
     ##
@@ -74,6 +74,8 @@ class Listener():
                 self.asleep = True
             elif self.asleep:
                 print("INFO: I head you but I am asleep")
+                pass
+            elif "CANCEL" in commands:
                 pass
 
             #Buzz Off command puts Bijou to sleep for fifteen minutes.
@@ -102,6 +104,23 @@ class Listener():
                         os.system("/home/pi/./toggle-property.sh http---w26.local-things-led7 on")
                     elif value == "EIGHT":
                         os.system("/home/pi/./toggle-property.sh http---w26.local-things-led8 on")
+
+            # LG TV commands.
+            elif "OPEN" in commands:
+                if "NETFLIX" in commands:
+                    os.system("/home/pi/./tv-application.sh Netflix")
+                if "HULU" in commands:
+                    os.system("/home/pi/./tv-application.sh Hulu")
+                if "YOUTUBE" in commands:
+                    os.system("/home/pi/./tv-application.sh Youtube")
+            elif "MUTE" in commands:
+                os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df mute true")
+            elif "UNMUTE" in commands:
+                os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df mute false")
+            elif "PAUSE" in commands:
+                os.system("/home/pi/./tv-pause-play.sh pause")
+            elif "PLAY" in commands:
+                os.system("/home/pi/./tv-pause-play.sh play")
 
             # Action completed sound.
             if not self.asleep:
