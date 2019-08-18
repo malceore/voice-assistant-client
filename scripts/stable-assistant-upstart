@@ -1,6 +1,0 @@
-#!/bin/sh
-ps aux | grep main.py | grep -v grep
-if [ $? != 0 ]
-then
-    /usr/bin/python /home/pi/voice-assistant-client/main.py /home/pi/voice-assistant-client/hotwords/Bijou.pmdl >> /tmp/assistant.log 2>&1 &
-fi

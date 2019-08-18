@@ -42,6 +42,8 @@ class Listener():
                     frames_per_buffer=self.chunk)
 
         print("Starting Transcription..")
+        # Testing pausing audio for transcription.
+        os.system("/home/pi/./tv-pause-play.sh Pause")
         self.ws_whisper.send("start")
         if not self.asleep:
             subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
@@ -52,6 +54,8 @@ class Listener():
         self.command_handler(self.ws_whisper.recv())
         #stream.close()
         p.terminate()
+        os.system("/home/pi/./tv-pause-play.sh Play")
+
 
     ##
     ## Takes in a string of transcriptions from whisper, attempts to parse and act upon them.
