@@ -106,21 +106,40 @@ class Listener():
                         os.system("/home/pi/./toggle-property.sh http---w26.local-things-led8 on")
 
             # LG TV commands.
+            elif "T_V" in commands:
+                if "ON" in commands:
+                        os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df on true")
+                if "OFF" in commands:
+                        os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df on false")
             elif "OPEN" in commands:
                 if "NETFLIX" in commands:
                     os.system("/home/pi/./tv-application.sh Netflix")
                 if "HULU" in commands:
                     os.system("/home/pi/./tv-application.sh Hulu")
                 if "YOUTUBE" in commands:
-                    os.system("/home/pi/./tv-application.sh Youtube")
+                    os.system("/home/pi/./tv-application.sh YouTube")
+                if "CHROMECAST" in commands:
+                    os.system("/home/pi/./tv-application.sh HDMI1")
+                if "XBOX" in commands:
+                    os.system("/home/pi/./tv-application.sh HDMI3")
             elif "MUTE" in commands:
                 os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df mute true")
             elif "UNMUTE" in commands:
                 os.system("/home/pi/./set-property.sh lg-tv-38:8c:50:59:24:df mute false")
             elif "PAUSE" in commands:
-                os.system("/home/pi/./tv-pause-play.sh pause")
+                os.system("/home/pi/./tv-pause-play.sh Pause")
+            elif "STOP" in commands:
+                os.system("/home/pi/./tv-pause-play.sh Stop")
             elif "PLAY" in commands:
-                os.system("/home/pi/./tv-pause-play.sh play")
+                if "MUSIC" in commands:
+                    print("Not yet finished.. :(")
+                else:
+                    os.system("/home/pi/./tv-pause-play.sh Play")
+            elif "VOLUME" in commands:
+                if "UP" in commands:
+                    os.system("/home/pi/./tv-volume.sh Up")
+                else:
+                    os.system("/home/pi/./tv-volume.sh Down")
 
             # Action completed sound.
             if not self.asleep:
