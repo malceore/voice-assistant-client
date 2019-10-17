@@ -1,26 +1,27 @@
 from webthing import (Event, Property, SingleThing, Thing, Value,
                       WebThingServer)
 from snowboydecoder.Listener import Listener
-import threading
 import logging
 import sys
+import os
 import time
 import uuid
 
 class VoiceAssistant(Thing):
-    def __init__(self, listener):
-        self.listener = listener
-        self.run = True
+    def __init__(self):
+        self.listening=True
+        self.volume=50
+        self.sensitivity=45
         Thing.__init__(self,
-                   'VoiceAssistant',
-                   ['VoiceAssistant'],
-                   'CustomThing')
+                   'VoiceAssistant1',
+                   ['VoiceAssistant1'],
+                   'CustomThing1')
 
         self.add_property(
             Property(self,
                  'on',
                  #@https://discourse.mozilla.org/t/how-to-trigger-an-event-when-a-property-value-is-changed/34800/4
-                 Value(True, self.setMute),
+                 Value(self.listening, self.setListen),
                  metadata={
                      '@type': 'OnOffProperty',
                      'title': 'Listening',
@@ -30,7 +31,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'volume',
-                 Value(50),
+                 Value(self.volume, self.setVolume),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Volume',
@@ -43,7 +44,7 @@ class VoiceAssistant(Thing):
         self.add_property(
             Property(self,
                  'sensitivity',
-                 Value(50),
+                 Value(self.sensitivity, self.setSensitivity),
                  metadata={
                      '@type': 'BrightnessProperty',
                      'title': 'Sensitivity',
@@ -54,48 +55,41 @@ class VoiceAssistant(Thing):
                      'unit': 'percent',
                  }))
 
-    def setMute(self, value):
-        print(value)
-        # Sleep functionality is inverted from listening, need to fix.
-        if value == self.listener.asleep:
-            self.listener.asleep = value
+    def setListen(self, value):
+        #print("Listening has been changed! " + str(value))
+        self.listening = str(value)
+        self.updateFile()
 
-    #def setVolume(self):
-    #    print("Mute has been changed!")
+    def setVolume(self, value):
+        #print("Volume has been changed!")
+        self.volume = str(value)
+        self.updateFile()
 
-    #def setSensitivity(self):
-    #    print("Mute has been changed!")
+    def setSensitivity(self, value):
+        #print("Sensitivity has been changed!")
+        self.sensitivity = str(value)
+        self.updateFile()
+
+    def updateFile(self):
+        exports="echo 'export LISTENING={};\nexport VOLUME={};\nexport SENSITIVITY={};' > /tmp/.assistant"
+        os.system(exports.format(self.listening, self.volume, self.sensitivity))
 
 
 
 if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        print("ERROR: need to specify model name")
-        print("USAGE: python demo.py your.model")
-        sys.exit(-1)
-
     logging.basicConfig(
         level=10,
         format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s %(message)s"
     )
-
-    listener = Listener(sys.argv[1])
-    thing = VoiceAssistant(listener)
+    thing = VoiceAssistant()
+    thing.updateFile()
     server = WebThingServer(SingleThing(thing), port=9999)
-    #t = threading.Thread(target=listener.start)
-    t = threading.Thread(target=server.start)
-
     try:
-        logging.info('starting the servers')
-        t.start()
-        thing.listener.start()
-        #server.start()
-        #listener.start()
+        logging.info('Starting the server..')
+        server.start()
     except KeyboardInterrupt:
-        logging.info('stopping the servers')
-        thing.listener.stop()
+        logging.info('Stopping the server..')
         server.stop()
-        t.join()
         logging.info('done')
 
 

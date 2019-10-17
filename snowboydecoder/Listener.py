@@ -14,11 +14,30 @@ class Listener():
         self.channels    = 1
         self.rate        = 16000
         self.threshold   = 2500
-        self.sensitivity = 0.45
-        self.asleep      = False
         self.cooldown    = 0.03
+        self.sensitivity = float(os.environ['SENSITIVITY'])/100
+        self.listening   = bool(os.environ['LISTENING'])
         self.ws_whisper  = create_connection("ws://195.168.1.100:9001")
         self.detector    = HotwordDetector(model, sensitivity=self.sensitivity)
+
+    ##
+    ## Checks to see if the mozilla things thread has had it's vars changed.
+    ##
+    def checkEnvironmentVariables(self):
+        self.shellSource("/tmp/.assistant")
+        if self.sensitivity != float(os.environ['SENSITIVITY'])/100:
+            self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
+            self.detector.detector.SetSensitivity(str(self.sensitivity))
+        self.listening = bool(os.environ.get('LISTENING'))
+        print("DEBUG::" + str(self.sensitivity) + ", " + str(self.listening))
+
+    def shellSource(self, script):
+        """Sometime you want to emulate the action of "source" in bash,
+        settings some environment variables. Here is a way to do it."""
+        pipe = subprocess.Popen(". %s; env" % script, stdout=subprocess.PIPE, shell=True)
+        output = pipe.communicate()[0]
+        env = dict((line.split("=", 1) for line in output.splitlines()))
+        os.environ.update(env)
 
     def start(self):
         print("Listener started and listening..")
@@ -34,6 +53,8 @@ class Listener():
     ## Sends captured listengin audio to Whisper server for transcription.
     ##
     def transcribe(self):
+        self.checkEnvironmentVariables()
+
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
                     channels=self.channels,
@@ -42,20 +63,19 @@ class Listener():
                     frames_per_buffer=self.chunk)
 
         print("Starting Transcription..")
-        # Testing pausing audio for transcription.
-        os.system("/home/pi/./tv-pause-play.sh Pause")
-        self.ws_whisper.send("start")
-        if not self.asleep:
+        if self.listening:
             subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
+
+        # Testing pausing audio for transcription.
+        os.system("/home/pi/./tv-volume.sh Down")
+        self.ws_whisper.send("start")
         t_end = time.time() + 4
         while time.time() < t_end:
             self.ws_whisper.send_binary(stream.read(self.chunk))
         self.ws_whisper.send("stop")
         self.command_handler(self.ws_whisper.recv())
-        #stream.close()
         p.terminate()
-        os.system("/home/pi/./tv-pause-play.sh Play")
-
+        os.system("/home/pi/./tv-volume.sh Up")
 
     ##
     ## Takes in a string of transcriptions from whisper, attempts to parse and act upon them.
@@ -73,11 +93,11 @@ class Listener():
             print("INFO: I am confident I understood your commands.")
             # Disable and enable commands basically.
             if "AWAKE" in commands:
-                self.asleep = False
-            elif "SLEEP" in commands or self.asleep:
-                self.asleep = True
-            elif self.asleep:
-                print("INFO: I head you but I am asleep")
+                self.listening = True
+            elif "SLEEP" in commands or not self.listening:
+                self.listening = False
+            elif not self.listening:
+                print("INFO: I head you but I am not listening")
                 pass
             elif "CANCEL" in commands:
                 pass
@@ -146,7 +166,7 @@ class Listener():
                     os.system("/home/pi/./tv-volume.sh Down")
 
             # Action completed sound.
-            if not self.asleep:
+            if self.listening:
                 subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
 
 
@@ -158,7 +178,10 @@ if __name__ == '__main__':
         print("ERROR: need to specify model name")
         print("USAGE: python demo.py your.model")
         sys.exit(-1)
+
     server = Listener(sys.argv[1])
+    server.shellSource("/tmp/.assistant")
+
     try:
         server.start()
     except KeyboardInterrupt:
