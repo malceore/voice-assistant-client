@@ -15,8 +15,8 @@ class Listener():
         self.rate        = 16000
         self.threshold   = 2500
         self.cooldown    = 0.03
-        self.sensitivity = float(os.environ['SENSITIVITY'])/100
-        self.listening   = bool(os.environ['LISTENING'])
+        self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
+        self.listening   = bool(os.environ.get('LISTENING'))
         self.ws_whisper  = create_connection("ws://195.168.1.100:9001")
         self.detector    = HotwordDetector(model, sensitivity=self.sensitivity)
 
@@ -25,7 +25,7 @@ class Listener():
     ##
     def checkEnvironmentVariables(self):
         self.shellSource("/tmp/.assistant")
-        if self.sensitivity != float(os.environ['SENSITIVITY'])/100:
+        if self.sensitivity != float(os.environ.get('SENSITIVITY'))/100:
             self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
             self.detector.detector.SetSensitivity(str(self.sensitivity))
         self.listening = bool(os.environ.get('LISTENING'))
