@@ -30,7 +30,7 @@ def playback(commands):
         os.system("/home/pi/./tv-pause-play.sh Stop")
     elif "PLAY" in commands:
         if "MUSIC" in commands:
-            print("Not yet finished.. :(")
+            music(commands)
         else:
             os.system("/home/pi/./tv-pause-play.sh Play")
     elif "VOLUME" in commands:
@@ -38,3 +38,11 @@ def playback(commands):
             os.system("/home/pi/./tv-volume.sh Up")
         else:
             os.system("/home/pi/./tv-volume.sh Down")
+
+def music(commands):
+    base = "https://www.youtube.com/results?search_query="
+    query="lowfi+radio+october"
+    #urlid = youtube_search(base+query)
+    #if urlid is not None:
+    #    fullurl = "https://www.youtube.com/watch?v=" + urlid
+    print("DEBUG:: fullurl " + base + query)

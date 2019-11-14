@@ -26,8 +26,11 @@ class Listener():
         self.skills = {
             'LIGHT': lights.toggleLights,
             'PAUSE': mediacenter.playback,
+            'PLAY': mediacenter.playback,
+            'STOP': mediacenter.playback,
             'OPEN': mediacenter.apps,
-            'TV': mediacenter.TV
+            'TV': mediacenter.TV,
+            'SET': utils.alarm
         }
 
     ## Checks to see if the mozilla things thread has had it's vars changed.
@@ -80,11 +83,12 @@ class Listener():
         p.terminate()
 
     def commandHandler(self, commands):
-        c = commands.split(':')
-        if int(c[-1]) < self.threshold:
-            print("INFO: I am not confident what you are talking about.")
-            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
-        elif "AWAKE" in commands:
+        #c = commands.split(':')
+        #if int(c[-1]) < self.threshold:
+        #    print("INFO: I am not confident what you are talking about.")
+        #    subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
+        #el
+        if "AWAKE" in commands:
             self.listening = True
         elif not self.listening:
             print("INFO: I heard you but I am not listening..")
