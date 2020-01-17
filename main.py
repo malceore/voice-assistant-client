@@ -50,8 +50,8 @@ class VoiceAssistant(Thing):
                      'title': 'Sensitivity',
                      'type': 'integer',
                      'description': 'The sensitivty level from 0-100',
-                     'minimum': 0,
-                     'maximum': 100,
+                     'minimum': 39,
+                     'maximum': 65,
                      'unit': 'percent',
                  }))
 

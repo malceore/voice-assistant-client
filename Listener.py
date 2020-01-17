@@ -9,13 +9,12 @@ from skills import *
 
 class Listener():
     def __init__(self, model):
-        self.shellSource("/tmp/.assistant")
         self.inter       = False
-        self.chunk       = 2048
+        self.chunk       = 1024
         self.format      = pyaudio.paInt16
         self.channels    = 1
         self.rate        = 16000
-        self.threshold   = -6000
+        self.threshold   = -6500
         self.cooldown    = 0.03
         self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
         self.listening   = bool(os.environ.get('LISTENING'))
@@ -40,7 +39,7 @@ class Listener():
             self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
             self.detector.detector.SetSensitivity(str(self.sensitivity))
         self.listening = bool(os.environ.get('LISTENING'))
-        print("DEBUG::" + str(self.sensitivity) + ", " + str(self.listening))
+        #print("DEBUG::" + str(self.sensitivity) + ", " + str(self.listening))
 
     def shellSource(self, script):
         """Sometime you want to emulate the action of "source" in bash,
@@ -79,30 +78,31 @@ class Listener():
         while time.time() < t_end:
             self.ws_whisper.send_binary(stream.read(self.chunk))
         self.ws_whisper.send("stop")
-        self.command_handler(self.ws_whisper.recv())
+        self.commandHandler(self.ws_whisper.recv())
+        self.checkEnvironmentVariables()
         p.terminate()
 
     def commandHandler(self, commands):
-        #c = commands.split(':')
-        #if int(c[-1]) < self.threshold:
-        #    print("INFO: I am not confident what you are talking about.")
-        #    subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
-        #el
-        if "AWAKE" in commands:
-            self.listening = True
-        elif not self.listening:
-            print("INFO: I heard you but I am not listening..")
-        elif "SLEEP" in commands:
-            self.listening = False
+        c = commands.split(':')
+        if int(c[-1]) < self.threshold:
+            print("INFO: I am not confident what you are talking about.")
+            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
         else:
-            print("INFO: I am believe I understood what you said.")
-            for key in self.skills.keys():
-                if key in commands:
-                    func = self.skills[key]
-                    func(commands)
-        # Action completed sound.
-        if self.listening:
-            subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
+            if "AWAKE" in commands:
+                self.listening = True
+            elif not self.listening:
+                print("INFO: I heard you but I am not listening..")
+            elif "SLEEP" in commands:
+                self.listening = False
+            else:
+                print("INFO: I am believe I understood what you said.")
+                for key in self.skills.keys():
+                    if key in commands:
+                        func = self.skills[key]
+                        func(commands)
+            # Action completed sound.
+            if self.listening:
+                subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
 
 ##  Program starts here when run as main, requires model as cli param.
 if __name__ == '__main__':
@@ -112,9 +112,10 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     server = Listener(sys.argv[1])
+    server.checkEnvironmentVariables()
     server.loadSkills()
+
     try:
         server.start()
     except KeyboardInterrupt:
         server.stop()
-
