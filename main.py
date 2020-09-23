@@ -15,8 +15,7 @@ class VoiceAssistant(Thing):
         Thing.__init__(self,
                    'VoiceAssistant1',
                    ['VoiceAssistant1'],
-                   'CustomThing1')
-
+                   'CustomThing')
         self.add_property(
             Property(self,
                  'on',
@@ -57,19 +56,26 @@ class VoiceAssistant(Thing):
 
     def setListen(self, value):
         #print("Listening has been changed! " + str(value))
+        if self.listening:
+            os.system("amixer set Capture cap")
+        else:
+            os.system("amixer set Capture nocap")
         self.listening = str(value)
-        self.updateFile()
+        #self.updateFile()
 
     def setVolume(self, value):
         #print("Volume has been changed!")
         self.volume = str(value)
-        self.updateFile()
+        os.system("amixer set Master " + str(value) + "% >> /tmp/gateway.log")
+        #self.updateFile()
 
     def setSensitivity(self, value):
         #print("Sensitivity has been changed!")
         self.sensitivity = str(value)
-        self.updateFile()
+        os.system("amixer set Capture " + str(value) + "% >> /tmp/gateway.log")
+        #self.updateFile()
 
+    ## Depreciated
     def updateFile(self):
         exports="echo 'export LISTENING={};\nexport VOLUME={};\nexport SENSITIVITY={};' > /tmp/.assistant"
         os.system(exports.format(self.listening, self.volume, self.sensitivity))
@@ -82,7 +88,10 @@ if __name__ == '__main__':
         format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s %(message)s"
     )
     thing = VoiceAssistant()
-    thing.updateFile()
+    #thing.updateFile()
+    thing.setSensitivity(thing.sensitivity)
+    thing.setVolume(thing.volume)
+    thing.setListen(thing.listening)
     server = WebThingServer(SingleThing(thing), port=9999)
     try:
         logging.info('Starting the server..')

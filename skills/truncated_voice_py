@@ -1,0 +1,49 @@
+import os
+import httplib2
+from urllib import urlencode, quote
+import urllib
+import math
+import time
+
+mary_host = "195.168.1.100"
+mary_port = "59125"
+query_hash = {
+              "INPUT_TYPE":"TEXT",
+              "LOCALE":"en_GB",
+              "VOICE":"dfki-poppy-hsmm",
+              "OUTPUT_TYPE":"AUDIO",
+              "AUDIO":"WAVE",
+              "audio_Volume_selected": "on",
+              "audio_Volume_parameters": "amount:2.0;",
+#              "effect_TractScaler_selected": "on",
+#              "effect_TractScaler_parameters": "amount:1.2;",
+#              "effect_F0Scale_selected": "on",
+#              "effect_F0Scale_parameters": "f0Scale:1.6;",
+              "effect_F0Add_selected": "on",
+              "effect_F0Add_parameters": "f0Add:90.0;",
+              "effect_Rate_selected": "on",
+              "effect_Rate_parameters": "durScale:10.0;",
+#              "effect_Whisper_selected": "on",
+#              "effect_Whisper_parameters": "amount:10.0;",
+              "effect_Stadium_selected": "on",
+              "effect_Stadium_parameters": "amount:20.0;",
+}
+
+
+def queryMaryTTSServer(input_text):
+    query_hash["INPUT_TEXT"] = input_text
+    query = urlencode(query_hash)
+    h_mary = httplib2.Http()
+    resp, content = h_mary.request("http://%s:%s/process?" % (mary_host, mary_port), "POST", query)
+    if (resp["content-type"] == "audio/x-wav"):
+        f = open("/tmp/output.wav", "wb")
+        f.write(content)
+        f.close()
+        os.system("amixer -q set Master 100% && aplay -q /tmp/output.wav && amixer -q set Master 40%")
+    else:
+        raise Exception(content)
+    os.system("rm /tmp/output.wav")
+
+def tellTime(commands):
+    now=time.strftime('%-I, %-M')
+    queryMaryTTSServer("It is now " + now + " ")

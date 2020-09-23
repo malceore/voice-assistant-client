@@ -4,13 +4,13 @@ echo "Staring services.."
 # https://askubuntu.com/questions/18958/realtime-noise-removal-with-pulseaudio
 # To clear up pulse audio add this too your pulseaudio config:
 # load-module module-echo-cancel
-export LISTENING="True"
-export VOLUME=100
-export SENSITIVITY=45
+#export LISTENING="True"
+#export VOLUME=100
+#export SENSITIVITY=45
+#touch /tmp/.assistant
 
-#python main.py &
+python main.py >> /tmp/assistant.log &
 sleep 1
-#python snowboydecoder/Listener.py hotwords/bijou.pmdl >> /tmp/assistant.log &
 python Listener.py hotwords/bijou.pmdl >> /tmp/assistant.log &
 process=$!
 audio=$(pgrep pulseaudio)

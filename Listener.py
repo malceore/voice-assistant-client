@@ -16,8 +16,8 @@ class Listener():
         self.rate        = 16000
         self.threshold   = -6500
         self.cooldown    = 0.03
-        self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
-        self.listening   = bool(os.environ.get('LISTENING'))
+        self.sensitivity = 45.0
+        self.listening   = 'True'
         self.ws_whisper  = create_connection("ws://195.168.1.100:9001")
         self.detector    = HotwordDetector(model, sensitivity=self.sensitivity)
 
@@ -29,16 +29,18 @@ class Listener():
             'STOP': mediacenter.playback,
             'OPEN': mediacenter.apps,
             'TV': mediacenter.TV,
+             #'TIME': voice.tellTime,
             'SET': utils.alarm
         }
 
+    ##  DEPRECIATED
     ## Checks to see if the mozilla things thread has had it's vars changed.
     def checkEnvironmentVariables(self):
         self.shellSource("/tmp/.assistant")
         if self.sensitivity != float(os.environ.get('SENSITIVITY'))/100:
             self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
             self.detector.detector.SetSensitivity(str(self.sensitivity))
-        self.listening = bool(os.environ.get('LISTENING'))
+        self.listening = os.environ.get('LISTENING')
         #print("DEBUG::" + str(self.sensitivity) + ", " + str(self.listening))
 
     def shellSource(self, script):
@@ -60,7 +62,7 @@ class Listener():
         print("Listener stopping, terminated..")
 
     def transcribe(self):
-        self.checkEnvironmentVariables()
+        #self.checkEnvironmentVariables()
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
                     channels=self.channels,
@@ -70,7 +72,7 @@ class Listener():
 
         print("Starting Transcription..")
         # Heard Hotword Noise.
-        if self.listening:
+        if self.listening == 'True':
             subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/ding.wav"])
 
         self.ws_whisper.send("start")
@@ -79,7 +81,7 @@ class Listener():
             self.ws_whisper.send_binary(stream.read(self.chunk))
         self.ws_whisper.send("stop")
         self.commandHandler(self.ws_whisper.recv())
-        self.checkEnvironmentVariables()
+        #self.checkEnvironmentVariables()
         p.terminate()
 
     def commandHandler(self, commands):
@@ -89,11 +91,11 @@ class Listener():
             subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/sound2.wav"])
         else:
             if "AWAKE" in commands:
-                self.listening = True
-            elif not self.listening:
+                self.listening = 'True'
+            elif self.listening == 'False':
                 print("INFO: I heard you but I am not listening..")
             elif "SLEEP" in commands:
-                self.listening = False
+                self.listening = 'False'
             else:
                 print("INFO: I am believe I understood what you said.")
                 for key in self.skills.keys():
@@ -101,7 +103,7 @@ class Listener():
                         func = self.skills[key]
                         func(commands)
             # Action completed sound.
-            if self.listening:
+            if self.listening == 'True':
                 subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
 
 ##  Program starts here when run as main, requires model as cli param.
@@ -112,7 +114,7 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     server = Listener(sys.argv[1])
-    server.checkEnvironmentVariables()
+    #server.checkEnvironmentVariables()
     server.loadSkills()
 
     try:
