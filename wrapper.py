@@ -56,30 +56,21 @@ class VoiceAssistant(Thing):
 
     def setListen(self, value):
         #print("Listening has been changed! " + str(value))
-        if self.listening:
+        self.listening = str(value)
+        if value:
             os.system("amixer set Capture cap")
         else:
             os.system("amixer set Capture nocap")
-        self.listening = str(value)
-        #self.updateFile()
 
     def setVolume(self, value):
-        #print("Volume has been changed!")
+        print("Volume has been changed: ", value)
+        os.system("amixer set Master " + str(value) + "%")
         self.volume = str(value)
-        os.system("amixer set Master " + str(value) + "% >> /tmp/gateway.log")
-        #self.updateFile()
 
     def setSensitivity(self, value):
-        #print("Sensitivity has been changed!")
+        print("Sensitivity has been changed: ", value)
+        os.system("amixer set Capture " + str(value) + "%")
         self.sensitivity = str(value)
-        os.system("amixer set Capture " + str(value) + "% >> /tmp/gateway.log")
-        #self.updateFile()
-
-    ## Depreciated
-    def updateFile(self):
-        exports="echo 'export LISTENING={};\nexport VOLUME={};\nexport SENSITIVITY={};' > /tmp/.assistant"
-        os.system(exports.format(self.listening, self.volume, self.sensitivity))
-
 
 
 if __name__ == '__main__':
@@ -88,7 +79,6 @@ if __name__ == '__main__':
         format="%(asctime)s %(filename)s:%(lineno)s %(levelname)s %(message)s"
     )
     thing = VoiceAssistant()
-    #thing.updateFile()
     thing.setSensitivity(thing.sensitivity)
     thing.setVolume(thing.volume)
     thing.setListen(thing.listening)

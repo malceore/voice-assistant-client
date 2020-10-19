@@ -15,8 +15,8 @@ class Listener():
         self.channels    = 1
         self.rate        = 16000
         self.threshold   = -6500
-        self.cooldown    = 0.03
-        self.sensitivity = 45.0
+        self.sensitivity = 42.5
+        self.cooldown    = 3.0
         self.listening   = 'True'
         self.ws_whisper  = create_connection("ws://195.168.1.100:9001")
         self.detector    = HotwordDetector(model, sensitivity=self.sensitivity)
@@ -33,24 +33,6 @@ class Listener():
             'SET': utils.alarm
         }
 
-    ##  DEPRECIATED
-    ## Checks to see if the mozilla things thread has had it's vars changed.
-    def checkEnvironmentVariables(self):
-        self.shellSource("/tmp/.assistant")
-        if self.sensitivity != float(os.environ.get('SENSITIVITY'))/100:
-            self.sensitivity = float(os.environ.get('SENSITIVITY'))/100
-            self.detector.detector.SetSensitivity(str(self.sensitivity))
-        self.listening = os.environ.get('LISTENING')
-        #print("DEBUG::" + str(self.sensitivity) + ", " + str(self.listening))
-
-    def shellSource(self, script):
-        """Sometime you want to emulate the action of "source" in bash,
-        settings some environment variables. Here is a way to do it."""
-        pipe = subprocess.Popen(". %s; env" % script, stdout=subprocess.PIPE, shell=True)
-        output = pipe.communicate()[0]
-        env = dict((line.split("=", 1) for line in output.splitlines()))
-        os.environ.update(env)
-
     def start(self):
         print("Listener started and listening..")
         self.detector.start(detected_callback=self.transcribe,
@@ -62,7 +44,6 @@ class Listener():
         print("Listener stopping, terminated..")
 
     def transcribe(self):
-        #self.checkEnvironmentVariables()
         p = pyaudio.PyAudio()
         stream = p.open(format=self.format,
                     channels=self.channels,
@@ -81,7 +62,6 @@ class Listener():
             self.ws_whisper.send_binary(stream.read(self.chunk))
         self.ws_whisper.send("stop")
         self.commandHandler(self.ws_whisper.recv())
-        #self.checkEnvironmentVariables()
         p.terminate()
 
     def commandHandler(self, commands):
@@ -114,7 +94,6 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     server = Listener(sys.argv[1])
-    #server.checkEnvironmentVariables()
     server.loadSkills()
 
     try:
