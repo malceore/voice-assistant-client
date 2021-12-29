@@ -49,27 +49,27 @@ class VoiceAssistant(Thing):
                      'title': 'Sensitivity',
                      'type': 'integer',
                      'description': 'The sensitivty level from 0-100',
-                     'minimum': 39,
-                     'maximum': 65,
+                     'minimum': 20,
+                     'maximum': 85,
                      'unit': 'percent',
                  }))
 
     def setListen(self, value):
-        #print("Listening has been changed! " + str(value))
+        print("Listening has been changed! " + str(value))
         self.listening = str(value)
         if value:
-            os.system("amixer set Capture cap")
+            os.system("amixer set Capture cap > /dev/null")
         else:
-            os.system("amixer set Capture nocap")
+            os.system("amixer set Capture nocap > /dev/null")
 
     def setVolume(self, value):
         print("Volume has been changed: ", value)
-        os.system("amixer set Master " + str(value) + "%")
+        os.system("amixer set Master " + str(value) + "% > /dev/null")
         self.volume = str(value)
 
     def setSensitivity(self, value):
         print("Sensitivity has been changed: ", value)
-        os.system("amixer set Capture " + str(value) + "%")
+        os.system("amixer set Capture " + str(value) + "% > /dev/null")
         self.sensitivity = str(value)
 
 

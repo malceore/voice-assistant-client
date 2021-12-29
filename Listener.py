@@ -23,6 +23,7 @@ class Listener():
 
     def loadSkills(self):
         self.skills = {
+            'GOODNIGHT': lights.lightsOut,
             'LIGHT': lights.toggleLights,
             'PAUSE': mediacenter.playback,
             'PLAY': mediacenter.playback,

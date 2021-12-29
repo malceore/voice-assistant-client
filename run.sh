@@ -9,9 +9,9 @@ echo "Staring services.."
 #export SENSITIVITY=45
 #touch /tmp/.assistant
 
-#python wrapper.py >> /tmp/assistant.log &
+python wrapper.py >> /tmp/assistant.log &
 sleep 1
-python Listener.py hotwords/bijou.pmdl >> /tmp/assistant.log &
+#python Listener.py hotwords/bijou.pmdl >> /tmp/assistant.log &
 process=$!
 audio=$(pgrep pulseaudio)
 sudo renice -n -15 -p $process
