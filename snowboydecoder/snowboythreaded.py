@@ -17,7 +17,7 @@ class ThreadedDetector(threading.Thread):
         threading.Thread.__init__(self)
         self.models = models
         self.init_kwargs = kwargs
-        self.interrupted = True
+        self.interrupted = False
         self.commands = Queue.Queue()
         self.vars_are_changed = True
         self.detectors = None  # Initialize when thread is run in self.run()
