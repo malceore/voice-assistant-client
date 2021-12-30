@@ -7,7 +7,7 @@ from websocket import create_connection
 from snowboydecoder.snowboydecoder import HotwordDetector
 from skills import *
 
-class ListenerThread():
+class Listener():
     def __init__(self, model, sensitivity, server):
         self.inter       = False
         self.chunk       = 1024
@@ -20,10 +20,6 @@ class ListenerThread():
         self.listening   = 'True'
         self.ws_whisper  = create_connection("ws://" + server)
         self.detector    = HotwordDetector(model, sensitivity=sensitivity)
-        self.interrupted = True
-        self.loadSkills()
-
-    def loadSkills(self):
         self.skills = {
             'GOODNIGHT': lights.lightsOut,
             'LIGHT': lights.toggleLights,
@@ -41,7 +37,7 @@ class ListenerThread():
         #self.detector.start(detected_callback=self.transcribe,
         #       sleep_time=self.cooldown)
         self.detector.start(detected_callback=self.transcribe,
-               sleep_time=self.cooldown, interrupt_check=lambda: self.interrupted)
+               sleep_time=self.cooldown)
 
     def stop(self):
         self.detector.terminate()
@@ -91,7 +87,7 @@ class ListenerThread():
             if self.listening == 'True':
                 subprocess.call(["aplay", "-q", "/home/pi/voice-assistant-client/sounds/level_up.wav"])
 
-##  Program starts here when run as main, requires model as cli param.
+
 if __name__ == '__main__':
     if len(sys.argv) < 1 or len(sys.argv) > 4:
         print("ERROR: need to specify model name, sensitivity and server")
@@ -99,8 +95,6 @@ if __name__ == '__main__':
         sys.exit(-1)
 
     server = Listener(sys.argv[1], sys.argv[2], sys.argv[3])
-    #server.loadSkills()
-
     try:
         server.start()
     except KeyboardInterrupt:
